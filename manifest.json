@@ -1,5 +1,5 @@
 {
-  "name": "Ruota Radioamatori",
+  "name": "Ruota-Radioamatori",
   "short_name": "Ruota",
   "id": "/ruota-pwa/",
   "start_url": "/ruota-pwa/index.html",
@@ -19,4 +19,5 @@
     }
   ]
 }
+
 

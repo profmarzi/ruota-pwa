@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Ruota Radioamatori</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f4f7f">
+
+
+<style>
+  :root {
+    --bg: #f5f5f5;
+    --primary: #1f4f7f;
+    --border: #aaa;
+    --panel-bg: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: #222;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    background: var(--primary);
+    color: white;
+  }
+
+  #menuButton {
+    font-size: 24px;
+    margin-right: 15px;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: none; /* visibile solo su mobile */
+  }
+
+  header h1 {
+    font-size: 18px;
+    margin: 0;
+  }
+
+  /* LAYOUT */
+  .layout {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* MENU LATERALE (PC) */
+  nav {
+    width: 240px;
+    background: var(--panel-bg);
+    border-right: 1px solid var(--border);
+    padding: 10px;
+  }
+
+  nav h2 {
+    font-size: 16px;
+    margin-top: 0;
+  }
+
+  nav button {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0;
+    border: 1px solid var(--border);
+    background: #fff;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  nav button:hover {
+    background: #eee;
+  }
+
+  /* MENU MOBILE (hamburger) */
+  @media (max-width: 800px) {
+    #menuButton {
+      display: block;
+    }
+
+    nav {
+      position: absolute;
+      top: 50px;
+      left: 0;
+      bottom: 0;
+      width: 240px;
+      transform: translateX(-100%);
+      transition: transform 0.2s ease-out;
+      z-index: 10;
+    }
+
+    nav.open {
+      transform: translateX(0);
+    }
+  }
+
+  /* AREA CONTENUTO */
+  main {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+  }
+
+  .panel {
+    display: none;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    padding: 15px;
+  }
+
+  .panel.active {
+    display: block;
+  }
+
+  h2 {
+    margin-top: 0;
+    font-size: 18px;
+  }
+
+  ul {
+    list-style-type: none;
+    padding-left: 0;
+  }
+
+  li {
+    padding: 5px;
+    background: #e8e8e8;
+    margin-bottom: 5px;
+  }
+
+  button {
+    padding: 6px 10px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+
+  label {
+    display: block;
+    margin: 6px 0;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 6px;
+  }
+
+  #output {
+    background: #111;
+    color: #0f0;
+    padding: 10px;
+    font-size: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+</style>
+</head>
+
+<body>
+
+<header>
+  <button id="menuButton">☰</button>
+  <h1>Ruota Radioamatori</h1>
+</header>
+
+<div class="layout">
+
+  <!-- MENU -->
+  <nav id="sideMenu">
+    <h2>Menu</h2>
+
+    <button onclick="showPanel('ruota')">Ruota attuale</button>
+    <button onclick="showPanel('radioamatori')">Lista radioamatori</button>
+    <button onclick="showPanel('ponte')">Ponte utilizzato</button>
+
+    <button onclick="showPanel('addRadioamatore')">Aggiungi radioamatore</button>
+    <button onclick="showPanel('addPonte')">Aggiungi ponte</button>
+
+    <button onclick="showPanel('log')">Log corrente</button>
+
+    <button onclick="salvaHTML()">💾 Salva HTML aggiornato</button>
+  </nav>
+
+  <!-- CONTENUTO -->
+  <main>
+
+    <!-- RUOTA -->
+    <div id="panel-ruota" class="panel active">
+      <h2>Ruota attuale</h2>
+      <ul id="ruota"></ul>
+      <button onclick="salvaStato()">Salva stato ruota (CSV)</button>
+    </div>
+
+    <!-- LISTA RADIOAMATORI -->
+    <div id="panel-radioamatori" class="panel">
+      <h2>Lista radioamatori</h2>
+      <select id="listaRadioamatori"></select>
+      <button onclick="aggiungiAllaRuota()">Aggiungi alla ruota</button>
+    </div>
+
+    <!-- PONTE -->
+    <div id="panel-ponte" class="panel">
+      <h2>Ponte utilizzato</h2>
+      <select id="listaPonti"></select>
+    </div>
+
+    <!-- AGGIUNGI RADIOAMATORE -->
+    <div id="panel-addRadioamatore" class="panel">
+      <h2>Aggiungi nuovo radioamatore</h2>
+      <label>Nominativo: <input id="newNom" type="text"></label>
+      <label>Nome: <input id="newNome" type="text"></label>
+      <label>Iniziale cognome: <input id="newCogn" type="text" maxlength="1"></label>
+      <button onclick="aggiungiNuovo()">Aggiungi alla lista</button>
+    </div>
+
+    <!-- AGGIUNGI PONTE -->
+    <div id="panel-addPonte" class="panel">
+      <h2>Aggiungi nuovo ponte</h2>
+      <label>Sigla ponte: <input id="newPonteKey" type="text"></label>
+      <label>Nome ponte: <input id="newPonteName" type="text"></label>
+      <button onclick="aggiungiPonte()">Aggiungi ponte</button>
+    </div>
+
+    <!-- LOG -->
+    <div id="panel-log" class="panel">
+      <h2>Log corrente</h2>
+      <pre id="output">Nessun log ancora salvato.</pre>
+    </div>
+
+  </main>
+</div>
+
+<!-- DATABASE RADIOAMATORI -->
+<script id="db" type="application/json">
+{
+  "IZ2GMQ": { "nome": "", "cogn": "" },
+  "IW1GJH": { "nome": "", "cogn": "" },
+  "IU1TKO": { "nome": "", "cogn": "" },
+  "IW2JYJ": { "nome": "", "cogn": "" },
+  "IK2XRL": { "nome": "", "cogn": "" },
+  "IZ2DPX": { "nome": "", "cogn": "" },
+  "I2RNJ": { "nome": "", "cogn": "" },
+  "IW2CDD": { "nome": "", "cogn": "" },
+  "IW2NWB": { "nome": "", "cogn": "" },
+  "IU2AIV": { "nome": "", "cogn": "" },
+  "HB9TUO": { "nome": "", "cogn": "" },
+  "IK2UIZ": { "nome": "", "cogn": "" },
+  "IU2RNE": { "nome": "", "cogn": "" },
+  "IZ2EVE": { "nome": "", "cogn": "" },
+  "HB9FFA": { "nome": "", "cogn": "" },
+  "HB9IJW": { "nome": "", "cogn": "" },
+  "I2TPY": { "nome": "", "cogn": "" },
+  "IK2SGP": { "nome": "", "cogn": "" },
+  "IU2UOJ": { "nome": "", "cogn": "" },
+  "IK2YYL": { "nome": "", "cogn": "" },
+  "IW2MCP": { "nome": "Tullio", "cogn": "M" },
+  "IU2RNM": { "nome": "", "cogn": "" },
+  "IK2NCC": { "nome": "", "cogn": "" }
+}
+</script>
+
+<!-- DATABASE PONTI -->
+<script id="ponti" type="application/json">
+{
+  "R4": "Ripetitore R4",
+  "R5": "Ripetitore R5",
+  "R6": "Ripetitore R6",
+  "BERGAMO": "430.200"
+}
+</script>
+
+<script>
+let ruota = [];
+let radioamatori = JSON.parse(document.getElementById("db").textContent);
+let ponti = JSON.parse(document.getElementById("ponti").textContent);
+
+/* MENU MOBILE */
+const menuButton = document.getElementById('menuButton');
+const sideMenu = document.getElementById('sideMenu');
+
+menuButton.addEventListener('click', () => {
+  sideMenu.classList.toggle('open');
+});
+
+/* MOSTRA SOLO IL PANNELLO SCELTO */
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+
+  sideMenu.classList.remove('open'); // chiudi menu su mobile
+}
+
+/* AGGIORNA SELECT RADIOAMATORI */
+function aggiornaSelect() {
+  const sel = document.getElementById("listaRadioamatori");
+  sel.innerHTML = "";
+
+  const ordinati = Object.entries(radioamatori)
+    .sort((a, b) => a[1].nome.localeCompare(b[1].nome));
+
+  ordinati.forEach(([nom, dati]) => {
+    const opt = document.createElement("option");
+    opt.value = nom;
+    opt.textContent = `${nom} — ${dati.nome} ${dati.cogn}`;
+    sel.appendChild(opt);
+  });
+}
+aggiornaSelect();
+
+/* AGGIORNA SELECT PONTI */
+function aggiornaPonti() {
+  const sel = document.getElementById("listaPonti");
+  sel.innerHTML = "";
+
+  Object.entries(ponti).forEach(([key, name]) => {
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = `${key} — ${name}`;
+    sel.appendChild(opt);
+  });
+}
+aggiornaPonti();
+
+/* AGGIUNGI RADIOAMATORE */
+function aggiungiNuovo() {
+  const nom = newNom.value.trim().toUpperCase();
+  const nome = newNome.value.trim();
+  const cogn = newCogn.value.trim().toUpperCase();
+
+  if (!nom) return alert("Inserisci un nominativo");
+
+  radioamatori[nom] = { nome, cogn };
+
+  document.getElementById("db").textContent = JSON.stringify(radioamatori, null, 2);
+  aggiornaSelect();
+
+  newNom.value = "";
+  newNome.value = "";
+  newCogn.value = "";
+}
+
+/* AGGIUNGI PONTE */
+function aggiungiPonte() {
+  const key = newPonteKey.value.trim().toUpperCase();
+  const name = newPonteName.value.trim();
+
+  if (!key || !name) return alert("Inserisci sigla e nome ponte");
+
+  ponti[key] = name;
+
+  document.getElementById("ponti").textContent = JSON.stringify(ponti, null, 2);
+  aggiornaPonti();
+
+  newPonteKey.value = "";
+  newPonteName.value = "";
+}
+
+/* AGGIUNGI ALLA RUOTA */
+function aggiungiAllaRuota() {
+  const nominativo = listaRadioamatori.value;
+  if (!nominativo) return;
+  ruota.push(nominativo);
+  aggiornaRuota();
+}
+
+/* MOSTRA RUOTA */
+function aggiornaRuota() {
+  const ul = document.getElementById("ruota");
+  ul.innerHTML = "";
+
+  ruota.forEach(n => {
+    const dati = radioamatori[n];
+    const li = document.createElement("li");
+    li.textContent = `${n} — ${dati.nome} ${dati.cogn}`;
+    ul.appendChild(li);
+  });
+}
+
+/* SALVA CSV */
+function salvaStato() {
+  if (ruota.length === 0) {
+    alert("La ruota è vuota.");
+    return;
+  }
+
+  const timestamp = new Date().toISOString();
+
+  const now = new Date();
+  const giorno = String(now.getDate()).padStart(2,"0");
+  const mese = String(now.getMonth()+1).padStart(2,"0");
+  const anno = now.getFullYear();
+  const ore = String(now.getHours()).padStart(2,"0");
+  const minuti = String(now.getMinutes()).padStart(2,"0");
+
+  const ponte = listaPonti.value;
+  const filename = `${giorno}-${mese}-${anno}_${ore}-${minuti}_${ponte}.csv`;
+
+  let csv = "ordine,nominativo,nome,cognome,ponte,timestamp\n";
+  let logText = `Ponte: ${ponte}\nTimestamp: ${timestamp}\n\nPartecipanti:\n`;
+
+  ruota.forEach((n, i) => {
+    const dati = radioamatori[n];
+    csv += `${i+1},${n},${dati.nome},${dati.cogn},${ponte},${timestamp}\n`;
+    logText += `${i+1}) ${n} — ${dati.nome} ${dati.cogn}\n`;
+  });
+
+  output.textContent = logText;
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+/* SALVA HTML */
+function salvaHTML() {
+  ruota = [];
+  aggiornaRuota();
+
+  const html = document.documentElement.outerHTML;
+  const blob = new Blob([html], { type: "text/html" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "ruota.html";
+  a.click();
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .catch(err => console.log('SW registration failed', err));
+  });
+}
+</script>
+
+</body>
+</html>
